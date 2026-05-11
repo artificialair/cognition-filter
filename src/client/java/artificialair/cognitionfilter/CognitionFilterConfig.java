@@ -36,6 +36,8 @@ public class CognitionFilterConfig {
 
         private transient String processedPhrase;
         private transient String processedReplacement;
+        private transient Pattern compiledPattern;
+        private transient boolean valid = true;
 
         public Rule() {}
 
@@ -47,6 +49,15 @@ public class CognitionFilterConfig {
         void prepare() {
             processedPhrase      = processSpecialChars(phrase);
             processedReplacement = processSpecialChars(replacement);
+
+            try {
+                int flags = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
+                processedPhrase = useRegex ? processedPhrase : Pattern.quote(processedPhrase);
+                processedReplacement = useRegex ? processedReplacement : Matcher.quoteReplacement(processedReplacement);
+                compiledPattern = Pattern.compile(processedPhrase, flags);
+            } catch (PatternSyntaxException e) {
+                valid = false;
+            }
         }
 
         /**
@@ -60,14 +71,14 @@ public class CognitionFilterConfig {
          * including capture groups in the replacement (e.g. "$1").
          */
         public String apply(String input) {
-            if (processedPhrase == null || processedPhrase.isEmpty()) return input;
-            try {
-                int    flags   = caseSensitive ? 0 : Pattern.CASE_INSENSITIVE;
-                String pattern = useRegex ? processedPhrase      : Pattern.quote(processedPhrase);
-                String replace = useRegex ? processedReplacement : Matcher.quoteReplacement(processedReplacement);
-                return Pattern.compile(pattern, flags).matcher(input).replaceAll(replace);
-            } catch (PatternSyntaxException e) {
+            if (!valid || compiledPattern == null || input == null || input.isEmpty()) {
                 return input;
+            }
+
+            if (useRegex) {
+                return compiledPattern.matcher(input).replaceAll(replacement);
+            } else {
+                return input.replaceAll(processedPhrase, processedReplacement);
             }
         }
     }
@@ -89,6 +100,7 @@ public class CognitionFilterConfig {
     }
 
     public static void load() {
+        CognitionFilterManager.emptyCache();
         if (configPath == null || !Files.exists(configPath)) return;
         try (Reader reader = Files.newBufferedReader(configPath)) {
             List<Rule> loaded = GSON.fromJson(reader, RULE_LIST_TYPE);

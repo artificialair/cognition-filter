@@ -7,14 +7,41 @@ import net.minecraft.text.Style;
 import net.minecraft.text.StringVisitable;
 import net.minecraft.text.Text;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class CognitionFilterManager {
+    private static final int CACHE_SIZE = 5000;
+    private static final Map<String, String> STRING_CACHE =
+            Collections.synchronizedMap(
+                    new LinkedHashMap<>(CACHE_SIZE, 0.75f, true) {
+                        @Override
+                        protected boolean removeEldestEntry(Map.Entry<String, String> eldest) {
+                            return size() > CACHE_SIZE;
+                        }
+                    });
+
+    public static void emptyCache() {
+        STRING_CACHE.clear();
+    }
+
     public static String modifyString(String value) {
         if (value == null || value.isEmpty()) return value;
+        if (value.length() <= 256) {
+            String cached = STRING_CACHE.get(value);
+            if (cached != null) return cached;
+        }
+
+        String original = value;
         for (CognitionFilterConfig.Rule rule : CognitionFilterConfig.getRules()) {
             if (!rule.enabled) continue;
             value = rule.apply(value);
+        }
+
+        if (value.length() <= 256) {
+            STRING_CACHE.put(original, value);
         }
         return value;
     }
