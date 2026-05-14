@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -84,65 +86,72 @@ public class CognitionFilterManager {
 
         for (Rule rule : CognitionFilterConfig.getRules()) {
             if (!rule.enabled) continue;
-            List<StyledCharacter> phrase = rule.getParsedPhrase();
-            if (phrase.isEmpty()) continue;
 
-            StyledCharacter first = phrase.get(0);
-            List<StyledCharacter> output = new ArrayList<>(working.size());
-            boolean ruleMatched = false;
-            int index = 0;
- 
-            while (index < working.size()) {
-                boolean replaced = false;
- 
-                if (index <= working.size() - phrase.size()) {
-                    StyledCharacter current = working.get(index);
-                    if (codePointsMatch(current.codePoint(), first.codePoint(), rule.caseSensitive)
-                            && stylesAreOverlapping(first.style(), current.style())) {
- 
-                        int subIndex = 1;
-                        while (subIndex < phrase.size()) {
-                            StyledCharacter pc = phrase.get(subIndex);
-                            StyledCharacter tc = working.get(index + subIndex);
-                            if (!codePointsMatch(tc.codePoint(), pc.codePoint(), rule.caseSensitive)
-                                    || !stylesAreOverlapping(pc.style(), tc.style())) break;
-                            subIndex++;
-                        }
- 
-                        if (subIndex == phrase.size()) {
-                            Style parentStyle = working.get(index).style();
-                            for (StyledCharacter rc : rule.getParsedReplacement()) {
-                                output.add(rc.withParentStyle(parentStyle));
-                            }
-                            index += subIndex;
-                            replaced = true;
-                            ruleMatched = true;
-                        }
-                    }
+            Pattern p = rule.getCompiledPattern();
+            if (p == null) continue;
+
+            StringBuilder plain = new StringBuilder();
+            List<Integer> charToScIdx = new ArrayList<>();
+            for (int i = 0; i < working.size(); i++) {
+                int cp = working.get(i).codePoint();
+                charToScIdx.add(i);
+                if (Character.charCount(cp) == 2) charToScIdx.add(i);
+                plain.appendCodePoint(cp);
+            }
+            charToScIdx.add(working.size());
+
+            Matcher matcher = p.matcher(plain);
+            List<StyledCharacter> output = new ArrayList<>();
+            int lastScEnd = 0;
+            boolean anyMatch = false;
+
+            while (matcher.find()) {
+                int scStart = charToScIdx.get(matcher.start());
+                int scEnd = charToScIdx.get(matcher.end());
+
+                output.addAll(working.subList(lastScEnd, scStart));
+
+                String resolved = resolveReplacement(matcher, rule.getProcessedReplacement());
+                Style parentStyle = scStart < working.size() ? working.get(scStart).style() : Style.EMPTY;
+                for (StyledCharacter rc : Rule.parseFormattedString(resolved)) {
+                    output.add(rc.withParentStyle(parentStyle));
                 }
- 
-                if (!replaced) {
-                    output.add(working.get(index));
-                    index++;
-                }
+
+                lastScEnd = scEnd;
+                anyMatch = true;
             }
 
-            if (ruleMatched) working = output;
+            if (anyMatch) {
+                output.addAll(working.subList(lastScEnd, working.size()));
+                working = output;
+            }
         }
         return working;
     }
 
-    private static boolean stylesAreOverlapping(Style pattern, Style text) {
-        if (pattern.getColor() != null && !pattern.getColor().equals(text.getColor())) return false;
-        if (pattern.isBold()          && !text.isBold())          return false;
-        if (pattern.isItalic()        && !text.isItalic())        return false;
-        if (pattern.isObfuscated()    && !text.isObfuscated())    return false;
-        if (pattern.isUnderlined()    && !text.isUnderlined())    return false;
-        if (pattern.isStrikethrough() && !text.isStrikethrough()) return false;
-        return true;
-    }
-    
-    private static boolean codePointsMatch(int a, int b, boolean caseSensitive) {
-        return caseSensitive ? a == b : Character.toLowerCase(a) == Character.toLowerCase(b);
+    // mess for $1 style replacements
+    private static String resolveReplacement(Matcher matcher, String template) {
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < template.length()) {
+            char c = template.charAt(i);
+            if (c == '\\' && i + 1 < template.length()) {
+                sb.append(template.charAt(i + 1));
+                i += 2;
+            } else if (c == '$' && i + 1 < template.length() && Character.isDigit(template.charAt(i + 1))) {
+                int groupNum = 0;
+                i++;
+                while (i < template.length() && Character.isDigit(template.charAt(i))) {
+                    groupNum = groupNum * 10 + (template.charAt(i) - '0');
+                    i++;
+                }
+                String g = matcher.group(groupNum);
+                if (g != null) sb.append(g);
+            } else {
+                sb.append(c);
+                i++;
+            }
+        }
+        return sb.toString();
     }
 }

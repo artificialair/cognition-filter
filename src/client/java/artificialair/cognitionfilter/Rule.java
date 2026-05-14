@@ -66,7 +66,11 @@ public class Rule {
         return compiledPattern;
     }
 
-    public List<StyledCharacter> getParsedPhrase()      { 
+    public String getProcessedReplacement() {
+        return processedReplacement;
+    }
+
+    public List<StyledCharacter> getParsedPhrase() { 
         return parsedPhrase; 
     }
 
