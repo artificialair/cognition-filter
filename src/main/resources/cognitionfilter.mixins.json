@@ -1,9 +1,11 @@
 {
 	"required": true,
-	"package": "artificialair.cognitionfilter.mixin",
+	"package": "artificialair.cognitionfilter.mixins",
 	"compatibilityLevel": "JAVA_21",
 	"refmap": "cognitionfilter.refmap.json",
 	"mixins": [
+		"ChatHudMixin",
+		"TextHandlerMixin",
 		"TextRendererMixin"
 	],
 	"injectors": {

@@ -1,13 +1,12 @@
-package artificialair.cognitionfilter.mixin;
+package artificialair.cognitionfilter.mixins;
 
+import artificialair.cognitionfilter.CognitionFilterManager;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.StringVisitable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-
-import artificialair.cognitionfilter.CognitionFilterManager;
 
 @Mixin(TextRenderer.class)
 public class TextRendererMixin {
@@ -16,7 +15,7 @@ public class TextRendererMixin {
         index = 1, at = @At("HEAD"), argsOnly = true
     )
     private OrderedText modifyOrderedText(OrderedText value) {
-        return CognitionFilterManager.modifyOrderedText(value);
+        return CognitionFilterManager.modifyText(value);
     }
 
     @ModifyVariable(
@@ -24,30 +23,30 @@ public class TextRendererMixin {
         index = 1, at = @At("HEAD"), argsOnly = true
     )
     private String modifyString(String value) {
-        return CognitionFilterManager.modifyString(value);
+        return CognitionFilterManager.modifyText(value);
     }
 
     @ModifyVariable(
         method = "getWidth(Lnet/minecraft/text/OrderedText;)I",
         index = 1, at = @At("HEAD"), argsOnly = true
     )
-    private OrderedText modifyWidthOrderedText(OrderedText value) {
-        return CognitionFilterManager.modifyOrderedText(value);
+    private OrderedText modifyWidthOrderedText(OrderedText text) {
+        return CognitionFilterManager.modifyText(text);
     }
 
     @ModifyVariable(
         method = "getWidth(Ljava/lang/String;)I",
         index = 1, at = @At("HEAD"), argsOnly = true
     )
-    private String modifyWidthString(String value) {
-        return CognitionFilterManager.modifyString(value);
+    private String modifyWidthString(String text) {
+        return CognitionFilterManager.modifyText(text);
     }
 
     @ModifyVariable(
         method = "getWidth(Lnet/minecraft/text/StringVisitable;)I",
         index = 1, at = @At("HEAD"), argsOnly = true
     )
-    private StringVisitable modifyWidthFormattedText(StringVisitable value) {
-        return CognitionFilterManager.modifyFormattedText(value);
+    private StringVisitable modifyWidthFormattedText(StringVisitable text) {
+        return CognitionFilterManager.modifyText(text);
     }
 }

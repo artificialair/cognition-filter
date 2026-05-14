@@ -1,6 +1,8 @@
-package artificialair.cognitionfilter;
+package artificialair.cognitionfilter.commands;
  
 import com.mojang.brigadier.context.CommandContext;
+
+import artificialair.cognitionfilter.CognitionFilterConfig;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.text.Text;
@@ -24,7 +26,7 @@ public class CognitionFilterCommand {
         CognitionFilterConfig.load();
         int count = CognitionFilterConfig.getRules().size();
         ctx.getSource().sendFeedback(
-            Text.literal("§aCognitionFilter: reloaded " + count + " rule(s) from config.")
+            Text.literal("§c[§eCognitionFilter§c] §freloaded §b" + count + "§f rule(s) from config.")
         );
         return 1;
     }

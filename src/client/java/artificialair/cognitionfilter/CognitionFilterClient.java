@@ -1,5 +1,6 @@
 package artificialair.cognitionfilter;
 
+import artificialair.cognitionfilter.commands.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 
