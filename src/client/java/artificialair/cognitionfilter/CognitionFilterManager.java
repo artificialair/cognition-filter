@@ -72,7 +72,7 @@ public class CognitionFilterManager {
                     canReplace[0] = false;
                     return true;
                 }
-                sChars.add(new StyledCharacter(codePoint, style));
+                sChars.add(new StyledCharacter(codePoint, style, true));
                 return true;
             });
             
@@ -87,7 +87,7 @@ public class CognitionFilterManager {
 
         List<StyledCharacter> joined = new ArrayList<>();
         for (int i = 0; i < lines.size(); i++) {
-            if (i > 0) joined.add(new StyledCharacter('\n', Style.EMPTY));
+            if (i > 0) joined.add(new StyledCharacter('\n', Style.EMPTY, true));
             lines.get(i).visit((style, text) -> {
                 for (StyledCharacter sc : Rule.parseFormattedString(text))
                     joined.add(sc.withParentStyle(style));

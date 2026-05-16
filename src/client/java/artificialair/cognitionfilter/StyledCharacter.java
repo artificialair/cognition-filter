@@ -7,9 +7,10 @@ import net.minecraft.text.Text;
 import net.minecraft.text.Style;
 
 // today i learned about records (think of all the lines you could save!)
-public record StyledCharacter (int codePoint, Style style) {
+public record StyledCharacter (int codePoint, Style style, boolean withParent) {
     public StyledCharacter withParentStyle(Style parentStyle) {
-        return new StyledCharacter(codePoint, style.withParent(parentStyle));
+        if (!withParent) return this;  // used to make &&r actually reset the formatting (skyhanni does NOT do this)
+        return new StyledCharacter(codePoint, style.withParent(parentStyle), false);
     }
 
     public static MutableText listToText(List<StyledCharacter> chars) {

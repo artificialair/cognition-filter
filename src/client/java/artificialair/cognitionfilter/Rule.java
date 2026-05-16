@@ -83,17 +83,21 @@ public class Rule {
         if (text == null || text.isEmpty()) return Collections.emptyList();
         List<StyledCharacter> result = new ArrayList<>();
         Style currentStyle = Style.EMPTY;
+        boolean withParent = true;
  
         for (int i = 0; i < text.length(); ) {
             char c = text.charAt(i);
             if (c == '§' && i + 1 < text.length()) {
                 char code = text.charAt(i + 1);
                 Formatting fmt = Formatting.byCode(code);
-                if (fmt != null) currentStyle = applyFormatting(currentStyle, fmt);
+                if (fmt != null) {
+                    currentStyle = applyFormatting(currentStyle, fmt);
+                    withParent = false;
+                }
                 i += 2;
             } else {
                 int cp = text.codePointAt(i);
-                result.add(new StyledCharacter(cp, currentStyle));
+                result.add(new StyledCharacter(cp, currentStyle, withParent));
                 i += Character.charCount(cp);
             }
         }
