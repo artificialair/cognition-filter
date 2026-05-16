@@ -5,6 +5,7 @@
 	"refmap": "cognitionfilter.refmap.json",
 	"mixins": [
 		"ChatHudMixin",
+		"ItemStackMixin",
 		"TextHandlerMixin",
 		"TextRendererMixin"
 	],

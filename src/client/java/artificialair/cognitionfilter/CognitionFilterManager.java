@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import net.minecraft.text.Text;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Style;
 import net.minecraft.text.StringVisitable;
@@ -81,10 +82,42 @@ public class CognitionFilterManager {
         });
     }
 
+    public static List<Text> modifyTooltipLines(List<Text> lines) {
+        if (!changeWords || lines.isEmpty()) return lines;
+
+        List<StyledCharacter> joined = new ArrayList<>();
+        for (int i = 0; i < lines.size(); i++) {
+            if (i > 0) joined.add(new StyledCharacter('\n', Style.EMPTY));
+            lines.get(i).visit((style, text) -> {
+                for (StyledCharacter sc : Rule.parseFormattedString(text))
+                    joined.add(sc.withParentStyle(style));
+                return Optional.empty();
+            }, Style.EMPTY);
+        }
+
+        List<StyledCharacter> result = doReplacements(joined, CognitionFilterConfig.getMultiLineRules());
+        List<Text> output = new ArrayList<>();
+        List<StyledCharacter> current = new ArrayList<>();
+        for (StyledCharacter sc : result) {
+            if (sc.codePoint() == '\n') {
+                output.add(StyledCharacter.listToText(current));
+                current = new ArrayList<>();
+            } else {
+                current.add(sc);
+            }
+        }
+        output.add(StyledCharacter.listToText(current));
+        return output;
+    }
+
     private static List<StyledCharacter> doReplacements(List<StyledCharacter> characters) {
+        return doReplacements(characters, CognitionFilterConfig.getRules());
+    }
+    
+    private static List<StyledCharacter> doReplacements(List<StyledCharacter> characters, List<Rule> rules) {
         List<StyledCharacter> working = characters;
 
-        for (Rule rule : CognitionFilterConfig.getRules()) {
+        for (Rule rule : rules) {
             if (!rule.enabled) continue;
 
             Pattern p = rule.getCompiledPattern();

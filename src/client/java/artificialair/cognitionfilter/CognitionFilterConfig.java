@@ -24,6 +24,7 @@ public class CognitionFilterConfig {
 
     private static Path configPath;
     private static final List<Rule> rules = new ArrayList<>();
+    private static final List<Rule> multiLineRules = new ArrayList<>();
 
     public static void init(Path configDir) {
         configPath = configDir.resolve("cognitionfilter.json");
@@ -41,6 +42,7 @@ public class CognitionFilterConfig {
         try (Reader reader = Files.newBufferedReader(configPath)) {
             List<Rule> loaded = GSON.fromJson(reader, RULE_LIST_TYPE);
             rules.clear();
+            multiLineRules.clear();
             if (loaded != null) {
                 for (Rule rule : loaded) {
                     if (rule.useRegex && rule.phrase != null) {
@@ -53,6 +55,9 @@ public class CognitionFilterConfig {
                     }
                     rule.prepare();
                     rules.add(rule);
+                    if (rule.phrase != null && rule.phrase.contains("\n")) {
+                        multiLineRules.add(rule);
+                    }
                 }
             }
             LOGGER.info("[CognitionFilter] loaded {} rule(s)", rules.size());
@@ -76,5 +81,9 @@ public class CognitionFilterConfig {
 
     public static List<Rule> getRules() {
         return rules;
+    }
+    
+    public static List<Rule> getMultiLineRules() {
+        return multiLineRules;
     }
 }
